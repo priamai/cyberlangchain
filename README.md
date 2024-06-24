@@ -7,6 +7,16 @@ You are in the right place then!
 
 This project's goal is to add a set of useful tools for making agentic decision on sources like threat intelligence and alerts.
 
+# Setup
+Install the requirements.
+
+Create an .env file with the tools directory containig:
+
+
+````
+VIRUSTOTAL_API_KEY=yourkey
+OPENAI_API_KEY=yourkey
+````
 # Virus Total
 
 Go inside the example folder and you can find one example:
