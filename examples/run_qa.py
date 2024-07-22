@@ -56,7 +56,9 @@ new_prompt = agent.agent.create_prompt(
 agent.agent.llm_chain.prompt = new_prompt
 agent.tools = tools
 
-response = agent(input("How may I assist you?\n"))
+user_input = input("How may I assist you?\n")
+
+response = agent(user_input)
 
 print(response)
 
