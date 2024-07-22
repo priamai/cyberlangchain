@@ -39,11 +39,11 @@ class VirusTotalReportTool(BaseTool):
         " 'ipv4address': IP Address (e.g., '1.2.3.4'),'domain': Domain Name (e.g., 'example.com'),'filehash': File Hash (e.g., 'd41d8cd98f00b204e9800998ecf8427e')"
         " 'url': URL ( e.g., 'https://www.priam.ai/blogs/virtual-soc')"
         " 'analysis_id': Analysis ID (e.g., 'd41d8cd98f00b204e9800998ecf8427e')"
-        "'threat_categories': Popular Threat Categories"
+        " 'threat_categories': Popular Threat Categories"
         " 'attack_tactic': Attack Tactic ID (e.g., 'TA0043')"
         " 'attack_technique': Attack Technique ID (e.g., 'T1548')"
         " 'comments': Comments (e.g., 'malware')"
-        "'behavior': Behavior Summary of a File (e.g., 'd41d8cd98f00b204e9800998ecf8427e') " 
+        " 'behavior': Behavior Summary of a File (e.g., 'd41d8cd98f00b204e9800998ecf8427e') " 
 
         "If a file hash has been given and the behaviour details are asked, then ioc type needs to be behavior "
         "If there is any mention of comments the ioc_type needs be comments " 
@@ -65,6 +65,9 @@ class VirusTotalReportTool(BaseTool):
 
     def _run(self, ioc_value: str,ioc_type:str, **kwargs: Any) -> str:
         results = self.results(ioc_value,ioc_type, **kwargs)
+        with open("report.txt","w") as rep:
+            rep.write(str(results))
+
         return self._result_as_string(results,"Report")
 
     async def _arun(self, ioc_value: str,ioc_type:str, **kwargs: Any) -> str:
@@ -98,7 +101,7 @@ class VirusTotalReportTool(BaseTool):
         if ioc_type not in ioc_type_mapping:
             return {}
 
-        """ Based on the ioc type select from the dic and create the url """
+        """ Based on the ioc type prepare the url """
         url = f"{self.base_url}/{ioc_type_mapping[ioc_type]}"
 
         info = {
@@ -157,14 +160,68 @@ class VirusTotalReportTool(BaseTool):
     @staticmethod
     def _result_as_string(result: dict, root_key:None) -> str:
         '''
-        Conver the json output report into a natural text
+        Convert the json output report into a natural text.
+        Depending on the IOC responses might be different
 
         '''
-
         def case_fix(snake_str:str):
             spaces = snake_str.replace("_"," ")
             return spaces.capitalize()
+        
+        def ip_details(result):
+            details = []
+            attributes = result.get('attributes', {})
 
+            # Extract key IP address information
+            details.append(f"IP Address: {result.get('id')}")
+            details.append(f"Reputation: {attributes.get('reputation')}")
+            details.append(f"Continent: {attributes.get('continent')}")
+            details.append(f"Country: {attributes.get('country')}")
+            details.append(f"ASN: {attributes.get('asn')}")
+            details.append(f"AS Owner: {attributes.get('as_owner')}")
+
+            return f"\nIP Address Analysis Report:\n" + "\n".join(details)
+                
+        def domain_details(domain_data):
+            details = []
+            attributes = result.get('attributes', {})
+
+            # Extract General domain information
+            details.append(f"id: {domain_data.get('id')}")
+            details.append(f"reputation: {attributes.get('reputation')}")
+            details.append(f"registrar: {attributes.get('registrar')}")
+            details.append(f"Top Level Domain: {attributes.get('tld')}")
+
+            return f"\nDomain Analysis Report:\n" + "\n".join(details)
+
+
+        def file_details(result):
+          details = []
+          attributes = result.get('attributes', {})
+
+         #Extract general file information
+          details.append(f"id: {result.get('id')}")
+          details.append(f"extension: {attributes.get('type_extension')}")
+          details.append(f"reputation: {attributes.get('reputation')}")
+
+          return f"\nFile Analysis Report:\n" + "\n".join(details)
+
+        def url_details(url_data):
+           
+            details = []
+            attributes = url_data.get('attributes', {})
+
+            details.append(f"id: {url_data.get('id')}")
+            details.append(f"last_final_url: {attributes.get('last_final_url')}")
+            details.append(f"reputation: {attributes.get('reputation')}")
+            details.append(f"times_submitted: {attributes.get('times_submitted')}")
+            details.append(f"total_votes: {attributes.get('total_votes')}")
+            details.append(f"last_http_response_code: {attributes.get('last_http_response_code')}")
+            details.append(f"last_http_response_content_length: {attributes.get('last_http_response_content_length')} bytes")
+
+            return f"\nURL Analysis Report:\n" + "\n".join(details)
+
+            
         # each line of the report
         lines = []
 
@@ -175,6 +232,19 @@ class VirusTotalReportTool(BaseTool):
         if root_key:
             title = case_fix(root_key)
             lines.append(title+"\n")
+
+        ioc_type = result.get("type")
+        
+        """
+            Each response is slightly different depending on the IOC type.
+            Extracting to present General information. 
+        """
+
+        if ioc_type == "file":  lines.append(file_details(result))
+        elif ioc_type == "url": lines.append(url_details(result))
+        elif ioc_type == "ip_address": lines.append(ip_details(result))
+        elif ioc_type == "domain": lines.append(domain_details(result))
+        
 
         for key,value in result.items():
             if type(value) == dict:
@@ -188,6 +258,7 @@ class VirusTotalReportTool(BaseTool):
                 else:
                     sub_title  = case_fix(key)
                     lines += [f"{sub_title}: {value}"]
+
             if type(value) == int:
                 if "date" in key or "timestamp" in key:
                     # this could be a datetime
