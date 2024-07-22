@@ -56,7 +56,7 @@ new_prompt = agent.agent.create_prompt(
 agent.agent.llm_chain.prompt = new_prompt
 agent.tools = tools
 
-response = agent("Is this IP 1.2.3.4 malicious according to Virus Total?")
+response = agent(input("How may I assist you?\n"))
 
 print(response)
 
