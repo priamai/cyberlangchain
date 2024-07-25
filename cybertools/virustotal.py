@@ -23,7 +23,7 @@ from langchain_core.tools import BaseTool
 from langchain_core.pydantic_v1 import BaseModel, root_validator
 from langchain_core.utils import get_from_dict_or_env
 import datetime
-
+from tiktoken import get_encoding
 
 class VirusTotalReportTool(BaseTool):
     """Tool that queries IOC reports from the VirusTotal API"""
@@ -65,9 +65,6 @@ class VirusTotalReportTool(BaseTool):
 
     def _run(self, ioc_value: str,ioc_type:str, **kwargs: Any) -> str:
         results = self.results(ioc_value,ioc_type, **kwargs)
-        with open("report.txt","w") as rep:
-            rep.write(str(results))
-
         return self._result_as_string(results,"Report")
 
     async def _arun(self, ioc_value: str,ioc_type:str, **kwargs: Any) -> str:
@@ -283,7 +280,28 @@ class VirusTotalReportTool(BaseTool):
                             lines.append(new_lines)
                 else:
                     lines += [f"{sub_title}: empty"]
-
-        return "\n".join(lines)
+            report_string = "\n".join(lines)
+        
+        # Truncate the report string to fit within the token limit
+        truncated_report_string = VirusTotalReportTool._truncate_to_token_limit(report_string)
+        
+        return truncated_report_string
+        
+    @staticmethod
+    def _truncate_to_token_limit( text: str, token_limit: int = 14000) -> str:
+        """
+        Truncates the report if it exceeds the llm model's token limit
+        """
+        
+        encoding = get_encoding("cl100k_base")
+        tokens = encoding.encode(text)
+        
+        if len(tokens) > token_limit:
+            truncated_tokens = tokens[:token_limit]
+            truncated_text = encoding.decode(truncated_tokens)
+            print("Warning: Output truncated to fit token limit.")
+            return truncated_text
+        
+        return text
 
 
