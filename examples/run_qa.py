@@ -6,6 +6,17 @@ from langchain.agents import AgentType
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains.conversation.memory import ConversationBufferWindowMemory
 
+
+from uuid import uuid4
+unique_id = uuid4().hex[0:8]
+
+# set up to send all agents's traces to langsmith
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_PROJECT"] = f"cyberlangchain - {unique_id}"
+os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+os.environ["LANGCHAIN_API_KEY"] = ""  # Update to your API key
+
+
 # Set env var OPENAI_API_KEY or load from a .env file:
 import dotenv
 
@@ -46,19 +57,27 @@ agent = initialize_agent(
     max_iterations=3,
     early_stopping_method='generate',
     agent_kwargs=agent_kwargs,
-    memory=conversational_memory
+    memory=conversational_memory,
+    return_intermediate_steps=True
 )
 
+prefix=""""""
+
+
+instructions=""""""
+
+suffix="""
+"""
+
 new_prompt = agent.agent.create_prompt(
-    tools=tools
+    tools=tools, prefix=prefix, suffix=suffix, format_instructions=instructions
 )
 
 agent.agent.llm_chain.prompt = new_prompt
 agent.tools = tools
 
-user_input = input("How may I assist you?\n")
+while True:
 
-response = agent(user_input)
-
-print(response)
+    user_input = input("How may I assist you?\n")
+    response = agent(user_input)
 
