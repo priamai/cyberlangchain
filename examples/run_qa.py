@@ -6,21 +6,20 @@ from langchain.agents import AgentType
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains.conversation.memory import ConversationBufferWindowMemory
 from langchain_openai import ChatOpenAI
-from langchain import hub
 
-from uuid import uuid4
-unique_id = uuid4().hex[0:8]
-
-# set up to send all agents's traces to langsmith
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
-os.environ["LANGCHAIN_PROJECT"] = f"cyberlangchain - {unique_id}"
-os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-os.environ["LANGCHAIN_API_KEY"] = "<LANGCHAIN_API_KEY>" 
 
 # Set env var OPENAI_API_KEY or load from a .env file:
 import dotenv
 
 dotenv.load_dotenv()
+
+# set up to send all agents's traces to langsmith
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_PROJECT"] = f"cyberlangchain"
+os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+os.environ["LANGCHAIN_API_KEY"] = "<LANGCHAIN_API_KEY>" 
+
+
 
 system_msg = """AVA is a security copilot developed by Priam AI.
 A few import rules related to threat intelligence:
@@ -57,7 +56,8 @@ agent = initialize_agent(
     max_iterations=3,
     early_stopping_method='generate',
     agent_kwargs=agent_kwargs,
-    memory=conversational_memory
+    memory=conversational_memory,
+    return_intermediate_steps=True
 )
 
 new_prompt = agent.agent.create_prompt(
@@ -68,41 +68,13 @@ agent.agent.llm_chain.prompt = new_prompt
 agent.tools = tools
 
 
-grade_prompt_answer_accuracy = prompt = hub.pull("langchain-ai/rag-answer-vs-reference")
+#Prompt user for input and get agent response
+while True:
 
-
-def evaluate_agent(response, correct_answer):
-    
-    input_question = response['input']
-    reference = correct_answer
-    prediction = response['output']
-
-    # Create a ChatOpenAI instance for evaluation
-    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
-
-    # Structured prompt for evaluation
-    answer_grader = grade_prompt_answer_accuracy | llm
-
-    # Run evaluation
-    score = answer_grader.invoke({
-        "question": input_question,
-        "correct_answer": reference,
-        "student_answer": prediction
-    })
-    score = score["Score"]
-
-    return { "score": score}
-
-
-user_input = input("How may I assist you?\n")
-response = agent(user_input)
-print(response)
+   user_input = input("How may I assist you?\n")
+   if user_input == 'exit':  # Perform Evalution on a dataset instead of taking user inputs
+                break
+   response = agent( user_input)
 
 
 
-# Example for testing
-correct_answer = "The IP address 5.5.4.5 is not malicious."
-
-# Evaluate the agent's response
-evaluation_result = evaluate_agent(response, correct_answer)
-print("Evaluation Result:", evaluation_result)
