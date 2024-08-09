@@ -1,26 +1,24 @@
 import os
-from cybertools import VirusTotalReportTool
+from cybertools import VirusTotalReportTool, OTXReportTool
 from langchain_openai import OpenAI
 from langchain.agents import initialize_agent, Tool
 from langchain.agents import AgentType
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains.conversation.memory import ConversationBufferWindowMemory
 
-
-from uuid import uuid4
-unique_id = uuid4().hex[0:8]
-
-# set up to send all agents's traces to langsmith
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
-os.environ["LANGCHAIN_PROJECT"] = f"cyberlangchain - {unique_id}"
-os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-os.environ["LANGCHAIN_API_KEY"] = ""  # Update to your API key
-
-
 # Set env var OPENAI_API_KEY or load from a .env file:
 import dotenv
 
 dotenv.load_dotenv()
+
+
+# set up to send all agents's traces to langsmith
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_PROJECT"] = f"cyberlangchain"
+os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+os.environ["LANGCHAIN_API_KEY"] = ""  # Update to your API key
+
+
 
 system_msg = """AVA is a security copilot developed by Priam AI.
 A few import rules related to threat intelligence:
@@ -46,7 +44,7 @@ conversational_memory = ConversationBufferWindowMemory(
         return_messages=True
 )
 
-tools = [VirusTotalReportTool()]
+tools = [VirusTotalReportTool(),OTXReportTool()]
 
 # initialize agent with tools
 agent = initialize_agent(
