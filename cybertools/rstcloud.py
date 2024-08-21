@@ -9,7 +9,7 @@ from langchain_core.tools import BaseTool
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-
+import cache_util
 
 # RST WHOIS API - (Domain) 
 # RST IOC LOOKUP API supports - (IP, Domain, URL, MD5, SHA1, SHA256) 
@@ -88,6 +88,12 @@ class RSTcloudReportTool(BaseTool):
         """
         Prepares the API request based on the appropriate IOC type
         """
+        Tool = "RST"
+        # Load cached response if available
+        cached_response = cache_util.load_cached_response(Tool,ioc_value, ioc_type)
+
+        if cached_response:
+            return cached_response
 
         # Mapping of ioc_type to the corresponding method
         api_methods = {
@@ -105,7 +111,12 @@ class RSTcloudReportTool(BaseTool):
         if api_method is None:
             raise ValueError(f"Unsupported ioc_type: {ioc_type}")
 
-        return api_method(ioc_value, ioc_type, **kwargs)
+        result =  api_method(ioc_value, ioc_type, **kwargs)
+        
+        # Cache the API response
+        cache_util.cache_response(Tool,ioc_value, ioc_type, result)
+
+        return result
         
     
 
