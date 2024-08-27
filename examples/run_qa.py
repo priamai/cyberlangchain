@@ -1,5 +1,7 @@
 import os
-from cybertools import VirusTotalReportTool, OTXReportTool
+
+from cybertools import VirusTotalReportTool, OTXReportTool,RSTcloudReportTool
+
 from langchain_openai import OpenAI
 from langchain.agents import initialize_agent, Tool
 from langchain.agents import AgentType
@@ -17,7 +19,6 @@ os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_PROJECT"] = f"cyberlangchain"
 os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
 os.environ["LANGCHAIN_API_KEY"] = ""  # Update to your API key
-
 
 
 system_msg = """AVA is a security copilot developed by Priam AI.
@@ -44,7 +45,8 @@ conversational_memory = ConversationBufferWindowMemory(
         return_messages=True
 )
 
-tools = [VirusTotalReportTool(),OTXReportTool()]
+tools = [VirusTotalReportTool(),RSTcloudReportTool(),OTXReportTool()]
+
 
 # initialize agent with tools
 agent = initialize_agent(
@@ -59,12 +61,67 @@ agent = initialize_agent(
     return_intermediate_steps=True
 )
 
-prefix=""""""
+prefix="""You are a cybersecurity expert specialized in helping SOC analysts, threat analysts, and threat intelligence analysts. Based on the provided context and query, provide a detailed and accurate response. You will help in the best way possible.
+
+You leverage various tools and structured thinking processes to provide accurate and informed responses. You will ALWAYS have to verify whether do you need to use any tools, if you don't need respond to the user directly.
+
+To address the following task effectively, you will need to reason through each step, validate your logic, and ensure each part of your response is consistent with the others.
+
+This conclusion will represent a comprehensive analysis, backed by rigorous reasoning and a thorough examination of all available evidence.
+
+You have access to the following tools:
+
+"""
 
 
-instructions=""""""
+instructions="""
 
-suffix="""
+The way you use the tools is by specifying a json blob.  
+
+Specifically, this json should have a `action` key (with the name of the tool to use) and a `action_input` key (with the input to the tool going here).
+
+The only values that should be in the "action" field are: {tool_names}
+
+The $JSON_BLOB should primarily contain a SINGLE action. However, if a thorough analysis requires it, you may consider multiple actions, but only after carefully evaluating the need and potential consequences. Here is an example of a valid $JSON_BLOB:
+
+```
+
+{{{{
+
+"action": $TOOL_NAME,
+
+"action_input": $INPUT
+
+}}}}
+
+```
+
+ALWAYS use the following format:
+
+Question: the input question you must answer.
+
+Thought: Assess the context of the security incident or threat. Consider the potential impact of different actions.Evaluate alternative actions if necessary, especially when dealing with high-risk or ambiguous scenarios.
+
+Action: Specify the action to take using the JSON format. Ensure the action is precise and directly related to the query.When multiple actions are required, each should be well-justified based on the context and prior observations.
+  
+```
+
+$JSON_BLOB
+
+```
+Observation: Carefully analyze the results from the action. Determine if the results align with expectations or if further investigation is required.Consider potential security implications, false positives, or gaps in the data.
+
+... (this Thought/Action/Observation can repeat N times)
+
+Thought: Reflect on the new information gained from the observation. Decide if additional actions are necessary or if the final conclusion can be drawn.
+
+Final Answer: Provide the final analysis or recommendation based on the cumulative insights and observations. Ensure the answer is actionable, accurate, and aligned with cybersecurity best practices
+
+"""
+
+suffix="""Begin! Reminder to ALWAYS respond with a valid json blob of a single action. Your response should be clear, concise,
+
+Always use the exact characters `Final Answer` when responding "
 """
 
 new_prompt = agent.agent.create_prompt(
