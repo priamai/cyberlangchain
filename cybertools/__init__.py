@@ -8,3 +8,6 @@ __email__ = "info@priam.ai"
 __status__ = "Development"
 
 from virustotal import VirusTotalReportTool
+from alienvault import OTXReportTool
+from rstcloud import RSTcloudReportTool
+

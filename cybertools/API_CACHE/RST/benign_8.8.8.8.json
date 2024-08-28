@@ -1,0 +1,1 @@
+{"value": "8.8.8.8", "type": "ip", "benign": "true", "reason": "Drop Public DNS/Services/Google"}
