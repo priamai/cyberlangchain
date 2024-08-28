@@ -7,18 +7,20 @@ from langchain.agents import initialize_agent, Tool
 from langchain.agents import AgentType
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains.conversation.memory import ConversationBufferWindowMemory
+from langchain_openai import ChatOpenAI
+
 
 # Set env var OPENAI_API_KEY or load from a .env file:
 import dotenv
 
 dotenv.load_dotenv()
 
-
 # set up to send all agents's traces to langsmith
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_PROJECT"] = f"cyberlangchain"
 os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-os.environ["LANGCHAIN_API_KEY"] = ""  # Update to your API key
+os.environ["LANGCHAIN_API_KEY"] = "<LANGCHAIN_API_KEY>" 
+
 
 
 system_msg = """AVA is a security copilot developed by Priam AI.
@@ -131,8 +133,15 @@ new_prompt = agent.agent.create_prompt(
 agent.agent.llm_chain.prompt = new_prompt
 agent.tools = tools
 
+
+#Prompt user for input and get agent response
 while True:
 
-    user_input = input("How may I assist you?\n")
-    response = agent(user_input)
+   user_input = input("How may I assist you?\n")
+   if user_input == 'exit':  # Perform Evalution on a dataset instead of taking user inputs
+                break
+   response = agent( user_input)
+
+
+
 
